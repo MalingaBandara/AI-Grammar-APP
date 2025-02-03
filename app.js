@@ -22,45 +22,76 @@ app.get('/', (req, res) => {
 });
 
 
-// Main logic route 
+// Main logic route for handling text correction
 app.post('/correct', async (req, res) => {
-    const text = req.body.text.trim(); // Get the input text from the form
+    // Get the input text from the form and trim any leading/trailing whitespace
+    const text = req.body.text.trim();
 
+    // Check if the input text is empty
     if (!text) {
+        // Render the 'index' template with an error message if no text is provided
         return res.render('index', { 
-            corrected: 'Please enter some text to correct.',
-            originalText: text,
+            corrected: 'Please enter some text to correct.', // Error message
+            originalText: text, // Pass the original text back to the template
         });
     }
 
-    try{
-
-        const response = await fetch( "https://api.openai.com/v1/chat/completions", {
+    try {
+        // Make a POST request to the OpenAI API for text correction
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${process.env.OPENAI_KEY}`,
+                'Content-Type': 'application/json', // Set content type to JSON
+                Authorization: `Bearer ${process.env.OPENAI_KEY}`, // Use OpenAI API key from environment variables
             },
             body: JSON.stringify({
-                module: 'gpt-4o-mini',
+                model: 'gpt-4', // Specify the GPT model to use
                 messages: [
-                    { role: 'system', content: "You are helpful assistant." }, 
+                    { 
+                        role: 'system', 
+                        content: "You are a helpful assistant." // System message to define the assistant's behavior
+                    }, 
                     { 
                         role: 'user', 
-                        content: "Correct the following text: ${text}" 
+                        content: `Correct the following text: ${text}` // User message with the text to correct
                     }
                 ],
-                max_tokens: 100,
-                n: 1,
-                stop: null,
-                temperature: 1,
+                max_tokens: 100, // Limit the response to 100 tokens
+                n: 1, // Request only one completion
+                stop: null, // No specific stop sequence
+                temperature: 1, // Set creativity level (1 is balanced)
             }),
-        }  );
+        });
 
-    }catch(error){
+        // Check if the API response is not OK (e.g., API error)
+        if (!response.ok) {
+            // Render the 'index' template with an error message
+            return res.render('index', {
+                corrected: 'Something went wrong. Please try again.', // Error message
+                originalText: text, // Pass the original text back to the template
+            });
+        }
 
+        // Parse the API response as JSON
+        const data = await response.json();
+
+        // Extract the corrected text from the API response
+        const correctedText = data.choices[0].message.content;
+
+        // Render the 'index' template with the corrected text and original text
+        res.render('index', {
+            corrected: correctedText, // Pass the corrected text to the template
+            originalText: text, // Pass the original text back to the template
+        });
+
+    } catch (error) {
+        // Handle any unexpected errors (e.g., network issues)
+        return res.render('index', {
+            corrected: 'Something went wrong. Please try again.', // Error message
+            originalText: text, // Pass the original text back to the template
+        });
     }
-})
+});
 
 
 
