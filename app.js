@@ -3,7 +3,6 @@
 import 'dotenv/config'; // Load environment variables from a .env file
 import express from 'express'; // Import Express.js framework
 import fetch from 'node-fetch'; // Import node-fetch for making HTTP requests
-import ejs from 'ejs'; // Import EJS for templating
 
 const app = express(); // Initialize an Express application
 const port = process.env.PORT || 3000;
