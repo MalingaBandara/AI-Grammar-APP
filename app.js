@@ -18,58 +18,61 @@ app.use( express.urlencoded({ extended: true }) );
 
 
 app.get('/', (req, res) => {
-    res.render('index');
+    res.render('index', {
+        corrected: '', // Initialize corrected text to an empty string
+        originalText: '', // Initialize original text to an empty string
+    });
 });
 
 
 // Main logic route for handling text correction
 app.post('/correct', async (req, res) => {
-    // Get the input text from the form and trim any leading/trailing whitespace
+
+    // Extract and trim input text from the form to remove leading/trailing spaces
     const text = req.body.text.trim();
 
     // Check if the input text is empty
     if (!text) {
         // Render the 'index' template with an error message if no text is provided
-        return res.render('index', { 
-            corrected: 'Please enter some text to correct.', // Error message
-            originalText: text, // Pass the original text back to the template
+        res.render('index', { 
+            corrected: 'Please enter some text to correct.', // Error message displayed on the form
+            originalText: text, // Pass the original (empty) text back to the template for user convenience
         });
+        return; // Exit early to avoid making an unnecessary API call
     }
 
     try {
         // Make a POST request to the OpenAI API for text correction
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: 'POST',
+            method: "POST", // Use the POST HTTP method
             headers: {
-                'Content-Type': 'application/json', // Set content type to JSON
-                Authorization: `Bearer ${process.env.OPENAI_KEY}`, // Use OpenAI API key from environment variables
+                "Content-Type": "application/json", // Specify that the request body contains JSON
+                Authorization: `Bearer ${process.env.OPENAI_KEY}`, // Use OpenAI API key stored in environment variables
             },
             body: JSON.stringify({
-                model: 'gpt-4', // Specify the GPT model to use
+                model: "gpt-4o-mini", // Specify the GPT model to use for the correction task
                 messages: [
+                    { role: "system", content: "You are a helpful assistant."}, // System role for model behavior guidance
                     { 
-                        role: 'system', 
-                        content: "You are a helpful assistant." // System message to define the assistant's behavior
-                    }, 
-                    { 
-                        role: 'user', 
-                        content: `Correct the following text: ${text}` // User message with the text to correct
-                    }
+                        role: "user", 
+                        content: `correct this sentence. ${text} `, // User instruction for text correction
+                    },
                 ],
-                max_tokens: 100, // Limit the response to 100 tokens
-                n: 1, // Request only one completion
+                max_tokens: 100, // Limit the response to 100 tokens to control the response length
+                n: 1, // Request a single response completion
                 stop: null, // No specific stop sequence
-                temperature: 1, // Set creativity level (1 is balanced)
+                temperature: 1, // Set creativity level (1 is balanced; higher values make responses more diverse)
             }),
         });
 
-        // Check if the API response is not OK (e.g., API error)
+        // Check if the API response is not OK (e.g., API error, server error)
         if (!response.ok) {
             // Render the 'index' template with an error message
-            return res.render('index', {
-                corrected: 'Something went wrong. Please try again.', // Error message
-                originalText: text, // Pass the original text back to the template
+            res.render('index', {
+                corrected: 'Something went wrong. Please try again.', // Inform the user about the error
+                originalText: text, // Pass the original text back for user convenience
             });
+            return; // Exit early if the response is not successful
         }
 
         // Parse the API response as JSON
@@ -80,15 +83,15 @@ app.post('/correct', async (req, res) => {
 
         // Render the 'index' template with the corrected text and original text
         res.render('index', {
-            corrected: correctedText, // Pass the corrected text to the template
-            originalText: text, // Pass the original text back to the template
+            corrected: correctedText, // Display the corrected text to the user
+            originalText: text, // Display the original input text for reference
         });
 
     } catch (error) {
-        // Handle any unexpected errors (e.g., network issues)
-        return res.render('index', {
-            corrected: 'Something went wrong. Please try again.', // Error message
-            originalText: text, // Pass the original text back to the template
+        // Handle unexpected errors such as network issues or code exceptions
+        res.render('index', {
+            corrected: 'Something went wrong. Please try again.', // Generic error message for the user
+            originalText: text, // Display the original text for user convenience
         });
     }
 });

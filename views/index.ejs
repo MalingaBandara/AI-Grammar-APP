@@ -49,9 +49,7 @@
                     rows="5"
                     required
                     placeholder="Type or paste your text here..."
-                  >
-                    </textarea
-                  >
+                  ><%=originalText || '' %></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">
                   <i class="fas fa-magic me-2"></i>Enhance with AI
@@ -72,9 +70,11 @@
                 View your grammatically improved text below.
               </p>
               <!-- Results here -->
-              
+              <% if(corrected) { %> 
+                <p style="font-size: 18px; font-weight: bold; color: #1fad32;"><%=corrected %> </p>
+                <% } else { %>
               <p>Please enter some text to correct.</p>
-
+              <% } %>
             </div>
           </div>
         </div>
